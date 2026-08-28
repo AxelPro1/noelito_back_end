@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
+const mongoose = require('mongoose'); // Importante para la validación de seguridad
 
 const connectDB = require('./config/db');
 const { errorHandler, notFound } = require('./middleware/errorHandler');
@@ -14,6 +15,13 @@ const participantRoutes = require('./routes/participantRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const winnerRoutes = require('./routes/winnerRoutes');
 const prizeRoutes = require('./routes/prizeRoutes');
+
+// Validación de seguridad para evitar el error "undefined" en Railway
+const mongoUri = process.env.MONGO_URL || process.env.MONGODB_URI;
+if (!mongoUri) {
+  console.error("FATAL ERROR: La variable de entorno para MongoDB no está definida.");
+  process.exit(1);
+}
 
 connectDB();
 
