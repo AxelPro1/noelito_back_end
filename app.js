@@ -5,7 +5,6 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
-const mongoose = require('mongoose');
 
 const connectDB = require('./config/db');
 const { errorHandler, notFound } = require('./middleware/errorHandler');
@@ -16,14 +15,16 @@ const adminRoutes = require('./routes/adminRoutes');
 const winnerRoutes = require('./routes/winnerRoutes');
 const prizeRoutes = require('./routes/prizeRoutes');
 
-// Validación flexible que incluye MONGO_URI
+// Obtención flexible de la URL
 const mongoUri = process.env.MONGO_URI || process.env.MONGO_URL || process.env.MONGODB_URI;
+
 if (!mongoUri) {
   console.error("FATAL ERROR: La variable de entorno para MongoDB no está definida.");
   process.exit(1);
 }
 
-connectDB();
+// Conectar pasando la URL validada
+connectDB(mongoUri);
 
 const app = express();
 
@@ -32,19 +33,20 @@ app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(cors({ origin: process.env.FRONTEND_URL || '*' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
 if (process.env.NODE_ENV !== 'production') {
   app.use(morgan('dev'));
 }
 
-// Límite de peticiones al formulario público para evitar spam/bots
+// Límite de peticiones al formulario público
 const registerLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
+  windowMs: 15 * 60 * 1000,
   max: 10,
   message: { success: false, message: 'Demasiados intentos de registro. Intenta de nuevo más tarde.' }
 });
 app.use('/api/participants/register', registerLimiter);
 
-// Archivos estáticos: comprobantes de pago subidos
+// Archivos estáticos
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Rutas
