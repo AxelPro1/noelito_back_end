@@ -47,42 +47,47 @@ uploads/      -> comprobantes de pago subidos por los usuarios
 ## Endpoints principales
 
 ### Públicos (formulario de usuario)
-| Método | Ruta | Descripción |
-|---|---|---|
-| POST | `/api/participants/register` | Registra un participante (multipart/form-data: `fullName`, `accountName`, `phone`, `paymentProof`) |
-| GET  | `/api/participants/status/:phone` | Consulta el estado de una inscripción |
+
+| Método | Ruta                              | Descripción                                                                                        |
+| ------ | --------------------------------- | -------------------------------------------------------------------------------------------------- |
+| POST   | `/api/participants/register`      | Registra un participante (multipart/form-data: `fullName`, `accountName`, `phone`, `paymentProof`) |
+| GET    | `/api/participants/status/:phone` | Consulta el estado de una inscripción                                                              |
 
 ### Autenticación admin
-| Método | Ruta | Descripción |
-|---|---|---|
-| POST | `/api/auth/login` | Login (`username`, `password`) → devuelve `token` JWT |
-| GET  | `/api/auth/me` | Perfil del admin autenticado |
+
+| Método | Ruta              | Descripción                                           |
+| ------ | ----------------- | ----------------------------------------------------- |
+| POST   | `/api/auth/login` | Login (`username`, `password`) → devuelve `token` JWT |
+| GET    | `/api/auth/me`    | Perfil del admin autenticado                          |
 
 ### Panel de administración (requiere `Authorization: Bearer <token>`)
-| Método | Ruta | Descripción |
-|---|---|---|
-| GET | `/api/admin/stats` | Totales para el dashboard (pendientes, aprobados, rechazados) |
-| GET | `/api/admin/participants` | Lista/filtra depósitos (`?status=`, `?search=`, `?page=`, `?limit=`) |
-| GET | `/api/admin/participants/:id` | Detalle de un participante |
-| PATCH | `/api/admin/participants/:id/approve` | Aprueba el depósito |
-| PATCH | `/api/admin/participants/:id/reject` | Rechaza el depósito (`{ "reason": "..." }`) |
-| DELETE | `/api/admin/participants/:id` | Elimina un registro (solo `superadmin`) |
+
+| Método | Ruta                                  | Descripción                                                          |
+| ------ | ------------------------------------- | -------------------------------------------------------------------- |
+| GET    | `/api/admin/stats`                    | Totales para el dashboard (pendientes, aprobados, rechazados)        |
+| GET    | `/api/admin/participants`             | Lista/filtra depósitos (`?status=`, `?search=`, `?page=`, `?limit=`) |
+| GET    | `/api/admin/participants/:id`         | Detalle de un participante                                           |
+| PATCH  | `/api/admin/participants/:id/approve` | Aprueba el depósito                                                  |
+| PATCH  | `/api/admin/participants/:id/reject`  | Rechaza el depósito (`{ "reason": "..." }`)                          |
+| DELETE | `/api/admin/participants/:id`         | Elimina un registro (solo `superadmin`)                              |
 
 ### Premios configurables (requiere `Authorization: Bearer <token>`)
-| Método | Ruta | Descripción |
-|---|---|---|
-| GET | `/api/admin/prizes` | Lista los 3 premios (1°, 2°, 3°). Los crea con valores por defecto (Bs. 15.000/7.000/3.000) la primera vez |
-| PUT | `/api/admin/prizes/:rank` | Edita `label`/`amount`/`medalEmoji` del premio de rango `1`, `2` o `3` |
+
+| Método | Ruta                      | Descripción                                                                                                |
+| ------ | ------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/admin/prizes`       | Lista los 3 premios (1°, 2°, 3°). Los crea con valores por defecto (Bs. 15.000/7.000/3.000) la primera vez |
+| PUT    | `/api/admin/prizes/:rank` | Edita `label`/`amount`/`medalEmoji` del premio de rango `1`, `2` o `3`                                     |
 
 ### Módulo de sorteo por niveles (solo visible para el admin)
-| Método | Ruta | Descripción |
-|---|---|---|
-| POST | `/api/admin/winner/round/start` | Inicia una ronda nueva (o retoma la que esté `en_progreso`) |
-| GET | `/api/admin/winner/round/current` | Ronda activa: ganadores parciales y qué rango falta (`nextRank`) |
-| GET | `/api/admin/winner/round/:id` | Resumen de una ronda puntual (para la pantalla final) |
-| POST | `/api/admin/winner/draw` | 🎲 Sortea el **siguiente** nivel pendiente de la ronda activa (3°→2°→1°) |
-| GET | `/api/admin/winner` | Historial completo de ganadores, todas las rondas |
-| DELETE | `/api/admin/winner/:id` | Deshace un sorteo — libera el ticket y reabre la ronda si estaba cerrada (solo `superadmin`) |
+
+| Método | Ruta                              | Descripción                                                                                  |
+| ------ | --------------------------------- | -------------------------------------------------------------------------------------------- |
+| POST   | `/api/admin/winner/round/start`   | Inicia una ronda nueva (o retoma la que esté `en_progreso`)                                  |
+| GET    | `/api/admin/winner/round/current` | Ronda activa: ganadores parciales y qué rango falta (`nextRank`)                             |
+| GET    | `/api/admin/winner/round/:id`     | Resumen de una ronda puntual (para la pantalla final)                                        |
+| POST   | `/api/admin/winner/draw`          | 🎲 Sortea el **siguiente** nivel pendiente de la ronda activa (3°→2°→1°)                     |
+| GET    | `/api/admin/winner`               | Historial completo de ganadores, todas las rondas                                            |
+| DELETE | `/api/admin/winner/:id`           | Deshace un sorteo — libera el ticket y reabre la ronda si estaba cerrada (solo `superadmin`) |
 
 El orden de sorteo (3er → 2do → 1er lugar) es fijo por diseño: el endpoint `draw` calcula
 automáticamente cuál es el siguiente rango pendiente de la ronda, así que el frontend nunca
@@ -115,4 +120,10 @@ independientes por dígito, pantalla final de ganadores) se implementa en el rep
 - Solo se aceptan imágenes o PDF como comprobante, con límite de tamaño configurable.
 - Selección del ganador con `crypto.randomBytes` en vez de `Math.random` (mejor entropía/auditabilidad).
 - Índice único `(round, rank)` en `Winner`: imposible sortear dos veces el mismo nivel de premio dentro de una misma ronda, incluso ante doble clic o carrera de red.
-- Bloqueo permanente por ticket (`Participant.isWinner`): un ticket que ya ganó no puede volver a ser elegible, ni en la misma ronda ni en rondas futuras.
+- # Bloqueo permanente por ticket (`Participant.isWinner`): un ticket que ya ganó no puede volver a ser elegible, ni en la misma ronda ni en rondas futuras.
+
+# noelito_back_end
+
+back_end sorteos noelito
+
+04f141dfea1961808791a7f87e169406a2214ed2
